@@ -103,22 +103,30 @@ public class TrafficControlGUI {
         }
     }
 
-    public void removeVehicle(String vehicle) {
-        vehicleListModel.removeElement(vehicle);
-    }
-
     public void addEmergency(String emergency) {
         if (!emergencyListModel.contains(emergency)) {
             emergencyListModel.addElement(emergency);
         }
     }
 
-    public void removeEmergency(String emergency) {
-        emergencyListModel.removeElement(emergency);
+    public void updateMonitoring(String data) {
+        monitoringLabel.setText("Statistici trafic: " + data);
     }
 
-    public void updateMonitoring(String data) {
-        monitoringLabel.setText("Monitorizare: " + data);
+    public void updateCarStatus(String type, String car, String status) {
+        DefaultListModel<String> targetList = type.equals("Emergency") ? emergencyListModel : vehicleListModel;
+        boolean updated = false;
+        for (int i = 0; i < targetList.getSize(); i++) {
+            String element = targetList.get(i);
+            if (element.startsWith(car + ":")) {
+                targetList.set(i, car + ": " + status);
+                updated = true;
+                break;
+            }
+        }
+        if (!updated) {
+            targetList.addElement(car + ": " + status);
+        }
     }
 
     // Clasă internă pentru desenarea cercurilor semaforului
@@ -145,15 +153,4 @@ public class TrafficControlGUI {
             g.drawOval(getWidth() / 2 - size / 2, getHeight() / 2 - size / 2, size, size);
         }
     }
-
-    public void updateEmergencyStatus(String emergency, String status) {
-//        removeEmergency(emergency); // Eliminăm din lista principală
-        emergencyListModel.addElement(emergency + ": " + status); // Adăugăm cu noul status
-    }
-
-    public void updateVehicleStatus(String vehicle, String status) {
-        removeVehicle(vehicle);
-        vehicleListModel.addElement(vehicle + ": " + status); // Adăugăm cu noul status
-    }
-
 }

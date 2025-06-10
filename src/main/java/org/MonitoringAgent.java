@@ -1,13 +1,24 @@
 package org;
 
+import jade.core.AID;
 import jade.core.Agent;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.core.behaviours.CyclicBehaviour;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class MonitoringAgent extends Agent {
     private TrafficControlGUI gui;
     private HashMap<String, String> vehicleStatus = new HashMap<>();
+    private HashMap<String, Long> waitingTimes = new HashMap<>();
+    private int totalLightChanges = 0;
+    private long lastChangeDuration = 0;
 
     protected void setup() {
         Object[] args = getArguments();
@@ -17,30 +28,64 @@ public class MonitoringAgent extends Agent {
             System.out.println("MonitoringAgent: No GUI received!");
         }
 
-        System.out.println("Monitoring Agent started.");
-
         addBehaviour(new CyclicBehaviour(this) {
             public void action() {
                 ACLMessage msg = receive();
                 if (msg != null) {
                     String content = msg.getContent();
 
-                    if (msg.getPerformative() == ACLMessage.REQUEST) {
-                        gui.addVehicle(msg.getSender().getLocalName());
-                        vehicleStatus.put(msg.getSender().getLocalName(), "Waiting");
-                        System.out.println("MonitoringAgent: Vehicle " + msg.getSender().getLocalName() + " requested access.");
-                    } else if (content.contains(": Crossed")) {
+                    // Procesare semnal de schimbare a semaforului
+                    if (content.startsWith("LightChange")) {
                         String[] parts = content.split(": ");
-                        if (parts.length == 2) {
-                            vehicleStatus.put(parts[0], parts[1]);
-                            gui.updateVehicleStatus(parts[0], parts[1]);
-                            System.out.println("MonitoringAgent: Vehicle " + parts[0] + " updated to status: " + parts[1]);
+                        if (parts.length == 3) {
+                            totalLightChanges = Integer.parseInt(parts[1]);
+                            lastChangeDuration = Long.parseLong(parts[2]);
                         }
                     }
+                    // Procesare vehicule și urgențe
+                    else if (content.contains(":")) {
+                        String[] parts = content.split(": ");
+                        if (parts.length == 2) {
+                            String name = parts[0];
+                            String status = parts[1];
+
+                            vehicleStatus.put(name, status);
+
+                            List<AID> emergencyAgents = getEmergencyAgents();
+                            if (emergencyAgents.contains(new AID(name, AID.ISLOCALNAME))) {
+                                gui.updateCarStatus("Emergency", name, status);
+                            } else {
+                                gui.updateCarStatus("Vehicule", name, status);
+                            }
+                        }
+                    }
+
+                    // Actualizare interfață monitorizare
+                    gui.updateMonitoring("Schimbări semafor: " + totalLightChanges +
+                            " | Ultima schimbare: " + lastChangeDuration + " ms" +
+                            " | Vehicule în intersecție: " + vehicleStatus.size());
                 } else {
-                    block();
+                    block(); // Așteaptă noi mesaje
                 }
             }
         });
+    }
+
+    private List<AID> getEmergencyAgents() {
+        List<AID> emergencyAgents = new ArrayList<>();
+        DFAgentDescription template = new DFAgentDescription();
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("emergency"); // Același tip folosit la înregistrare
+        template.addServices(sd);
+
+        try {
+            DFAgentDescription[] result = DFService.search(this, template);
+            for (DFAgentDescription dfd : result) {
+                emergencyAgents.add(dfd.getName());
+            }
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+        return emergencyAgents;
     }
 }
