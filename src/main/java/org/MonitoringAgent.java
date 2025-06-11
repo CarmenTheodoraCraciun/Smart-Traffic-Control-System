@@ -9,19 +9,20 @@ import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
 public class MonitoringAgent extends Agent {
     private TrafficControlGUI gui;
     private HashMap<String, String> vehicleStatus = new HashMap<>();
-    private HashMap<String, Long> vehicleEntryTimes = new HashMap<>();
-    private int totalLightChanges;
+    private HashMap<String, String> pedestrianStatus = new HashMap<>();
+    private HashMap<String, Long> entryTimes = new HashMap<>();
+    private int totalLightChanges = 0;
     private long lastProcessedChangeTime = 0;
     private long lastLightCycleDuration = 0;
     private long totalWaitingTime = 0;
-    private int vehiclesProcessed = 0;
+    private int entitiesProcessed = 0;
 
     protected void setup() {
         Object[] args = getArguments();
@@ -37,6 +38,7 @@ public class MonitoringAgent extends Agent {
                 if (msg != null) {
                     String content = msg.getContent();
 
+                    // Procesare schimbare semafor
                     if (content.startsWith("LightChange")) {
                         String[] parts = content.split(":");
                         if (parts.length == 3) {
@@ -48,60 +50,60 @@ public class MonitoringAgent extends Agent {
                             }
                             lastProcessedChangeTime = currentChangeTime;
 
-                            System.out.println("MonitoringAgent received: Total Changes=" + totalLightChanges + ", Current Change Time=" + currentChangeTime + ", Last Cycle Duration=" + lastLightCycleDuration + "ms");
+                            System.out.println("MonitoringAgent received: Light changes=" + totalLightChanges);
                         }
                     }
+
+                    // Procesare vehicule și pietoni
                     else if (content.contains(":")) {
                         String[] parts = content.split(":");
                         if (parts.length == 2) {
                             String name = parts[0];
                             String status = parts[1];
 
-                            if (!vehicleEntryTimes.containsKey(name)) {
-                                vehicleEntryTimes.put(name, System.currentTimeMillis());
+                            boolean isPedestrian = name.startsWith("pedestrian");
+                            HashMap<String, String> targetStatus = isPedestrian ? pedestrianStatus : vehicleStatus;
+
+                            if (!entryTimes.containsKey(name)) {
+                                entryTimes.put(name, System.currentTimeMillis());
                             }
 
-                            if (status.equals("passed") && vehicleEntryTimes.containsKey(name)) {
-                                long entryTime = vehicleEntryTimes.get(name);
+                            if (status.equals("passed") && entryTimes.containsKey(name)) {
+                                long entryTime = entryTimes.get(name);
                                 long waitingTime = System.currentTimeMillis() - entryTime;
 
                                 totalWaitingTime += waitingTime;
-                                vehiclesProcessed++;
-                                vehicleEntryTimes.remove(name);
+                                entitiesProcessed++;
+                                entryTimes.remove(name);
                             }
 
-                            vehicleStatus.put(name, status);
+                            targetStatus.put(name, status);
 
-                            List<AID> emergencyAgents = getEmergencyAgents();
-                            if (emergencyAgents.contains(new AID(name, AID.ISLOCALNAME))) {
-                                gui.updateCarStatus("Emergency", name, status);
-                            } else {
-                                gui.updateCarStatus("Vehicule", name, status);
-                            }
+                            String type = isPedestrian ? "Pedestrian" : (getEmergencyAgents().contains(new AID(name, AID.ISLOCALNAME)) ? "Emergency" : "Vehicule");
+                            gui.updateAgentStatus(type, name, status);
                         }
                     }
 
+                    // Procesare verificare pietoni vs. urgențe
+                    else if (content.equals("CheckEmergency")) {
+                        boolean emergencyPresent = vehicleStatus.entrySet().stream()
+                                .anyMatch(entry -> getEmergencyAgents().contains(new AID(entry.getKey(), AID.ISLOCALNAME)) && !entry.getValue().equals("passed"));
+
+                        ACLMessage response = new ACLMessage(ACLMessage.INFORM);
+                        response.addReceiver(msg.getSender());
+                        response.setContent(emergencyPresent ? "EmergencyActive" : "NoEmergency");
+                        send(response);
+                    }
+
                     long emergencyVehiclesInIntersection = vehicleStatus.entrySet().stream()
-                            .filter(entry -> {
-                                try {
-                                    return getEmergencyAgents().contains(new AID(entry.getKey(), AID.ISLOCALNAME)) && !entry.getValue().equals("passed");
-                                } catch (Exception e) {
-                                    return false;
-                                }
-                            })
+                            .filter(entry -> getEmergencyAgents().contains(new AID(entry.getKey(), AID.ISLOCALNAME)) && !entry.getValue().equals("passed"))
                             .count();
 
-                    long currentAverageWaitingTime = vehiclesProcessed > 0 ? totalWaitingTime / vehiclesProcessed : 0;
+                    long averageWaitingTime = entitiesProcessed > 0 ? totalWaitingTime / entitiesProcessed : 0;
                     double frequency = (lastLightCycleDuration > 0) ? (60000.0 / lastLightCycleDuration) : 0.0;
 
-                    // Aici era problema în String.format. O să îl las la fel pentru debug.
-                    // Dar pentru GUI, trimite direct valoarea double.
-                    System.out.println("MonitoringAgent data: Vehicles Processed=" + vehiclesProcessed + ", Total Waiting Time=" + totalWaitingTime + ", Avg Waiting Time=" + currentAverageWaitingTime + "ms, Frequency=" + String.format("%.2f", frequency) + " changes/minute");
-
-                    // Trimiți direct valoarea double pentru frequency. GUI-ul ar trebui să o formateze.
-                    gui.updateMonitoring(vehicleStatus.size(), (int) emergencyVehiclesInIntersection, currentAverageWaitingTime, frequency);
-                }
-                else {
+                    gui.updateMonitoring(vehicleStatus.size(), pedestrianStatus.size(), (int) emergencyVehiclesInIntersection, averageWaitingTime, frequency);
+                } else {
                     block();
                 }
             }

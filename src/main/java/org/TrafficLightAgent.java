@@ -2,6 +2,7 @@ package org;
 
 import jade.core.Agent;
 import jade.core.AID;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.domain.DFService;
@@ -16,7 +17,6 @@ public class TrafficLightAgent extends Agent {
     private String state = "RED";
     private boolean emergencyActive = false;
     private TrafficControlGUI gui;
-    private long lastChangeSentToMonitorTime = System.currentTimeMillis(); // Track the time of the *last* message sent
     private int lightChangeCount = 0;
 
     protected void setup() {
@@ -41,8 +41,18 @@ public class TrafficLightAgent extends Agent {
                         case "GREEN" -> state = "YELLOW";
                         case "YELLOW" -> state = "RED";
                     }
+                    if (state.equals("RED") && !emergencyActive) {
+                        ACLMessage pedestrianMessage = new ACLMessage(ACLMessage.INFORM);
+                        pedestrianMessage.setContent("Red");
 
-                    if (state.equals("GREEN")) {
+                        List<AID> pedestrianAgents = getPedestrianAgents();
+                        for (AID pedestrian : pedestrianAgents) {
+                            pedestrianMessage.addReceiver(pedestrian);
+                        }
+                        send(pedestrianMessage);
+                    }
+
+                    if (state.equals("GREEN") && !emergencyActive) {
                         ACLMessage greenMessage = new ACLMessage(ACLMessage.INFORM);
                         greenMessage.setContent("Green");
 
@@ -88,5 +98,24 @@ public class TrafficLightAgent extends Agent {
         }
 
         return vehicleAgents;
+    }
+
+    private List<AID> getPedestrianAgents() {
+        List<AID> pedestrianAgents = new ArrayList<>();
+        DFAgentDescription template = new DFAgentDescription();
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("pedestrian");
+        template.addServices(sd);
+
+        try {
+            DFAgentDescription[] result = DFService.search(this, template);
+            for (DFAgentDescription dfd : result) {
+                pedestrianAgents.add(dfd.getName());
+            }
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+
+        return pedestrianAgents;
     }
 }

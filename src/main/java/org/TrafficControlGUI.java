@@ -5,10 +5,10 @@ import java.awt.*;
 
 public class TrafficControlGUI {
     private JFrame frame;
-    private JPanel leftPanel, rightPanel, lightPanel, monitoringPanel, vehiclePanel, emergencyPanel;
-    private JLabel lightTitle, stateLabel, monitoringTitle, monitoringLabel;
-    private DefaultListModel<String> vehicleListModel, emergencyListModel;
-    private JList<String> vehicleList, emergencyList;
+    private JPanel leftPanel, rightPanel, lightPanel, monitoringPanel, vehiclePanel, emergencyPanel, pedestrianPanel;
+    private JLabel lightTitle, stateLabel, monitoringTitle, monitoringLabel; // monitoringTitle poate fi chiar eliminat din declarare
+    private DefaultListModel<String> vehicleListModel, emergencyListModel, pedestrianListModel;
+    private JList<String> vehicleList, emergencyList, pedestrianList;
 
     private LightCircle redCircle, yellowCircle, greenCircle;
 
@@ -16,17 +16,23 @@ public class TrafficControlGUI {
         frame = new JFrame("Traffic Control System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(750, 500);
-        frame.setLayout(new GridLayout(1, 2, 10, 10)); // 1 rând, 2 coloane
+        frame.setLayout(new GridLayout(1, 2, 10, 10));
 
-        // *** Coloana 1: Semafor + Monitorizare ***
-        leftPanel = new JPanel(new BorderLayout());
+        // --- Inițializare și Configurare leftPanel ---
+        leftPanel = new JPanel();
+        leftPanel.setLayout(new GridBagLayout());
 
-        // Panel Semafor
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        // 1. lightPanel (Semafor)
         lightPanel = new JPanel();
         lightPanel.setLayout(new BoxLayout(lightPanel, BoxLayout.Y_AXIS));
         lightPanel.setBorder(BorderFactory.createTitledBorder("Semafor"));
+
         lightTitle = new JLabel("Traffic Light: Culoarea activă este evidențiată", SwingConstants.CENTER);
         lightTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lightPanel.add(lightTitle);
 
         JPanel lightsRowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         redCircle = new LightCircle(Color.RED);
@@ -35,117 +41,156 @@ public class TrafficControlGUI {
         lightsRowPanel.add(redCircle);
         lightsRowPanel.add(yellowCircle);
         lightsRowPanel.add(greenCircle);
+        lightPanel.add(lightsRowPanel);
 
         stateLabel = new JLabel("Current state: RED", SwingConstants.CENTER);
         stateLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        lightPanel.add(lightTitle);
-        lightPanel.add(lightsRowPanel);
         lightPanel.add(stateLabel);
 
-        leftPanel.add(lightPanel, BorderLayout.NORTH);
 
-        // Panel Monitorizare sub Semafor
-        monitoringPanel = new JPanel(new BorderLayout());
-        monitoringPanel.setBorder(BorderFactory.createTitledBorder("Monitorizare trafic"));
-        monitoringTitle = new JLabel("Date despre trafic și optimizare", SwingConstants.CENTER);
-        monitoringLabel = new JLabel("<html><br>Numărul de vehicule în intersecție = 0<br>" +
-                "Numărul de vehicule de urgență = 0<br>" +
-                "Frecvența schimbării semaforului = 0</html>", SwingConstants.LEFT);
-        monitoringPanel.add(monitoringTitle, BorderLayout.NORTH);
-        monitoringPanel.add(monitoringLabel, BorderLayout.NORTH);
-        leftPanel.add(monitoringPanel, BorderLayout.CENTER);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.2;
+        gbc.fill = GridBagConstraints.BOTH;
+        leftPanel.add(lightPanel, gbc);
 
-        frame.add(leftPanel);
 
-        // *** Coloana 2: Vehicule prioritare + restul vehiculelor ***
-        rightPanel = new JPanel(new GridLayout(2, 1));
+        // 2. monitoringPanel - MODIFICARE AICI: Eliminăm JLabel-ul "Monitoring Data"
+        monitoringPanel = new JPanel();
+        monitoringPanel.setLayout(new BoxLayout(monitoringPanel, BoxLayout.Y_AXIS));
+        monitoringPanel.setBorder(BorderFactory.createTitledBorder("Monitoring Data")); // Acesta este titlul dorit
 
-        // Panel Vehicule prioritare
+        // monitoringTitle = new JLabel("Monitoring Data"); // Această linie nu mai este necesară
+        // monitoringTitle.setAlignmentX(Component.CENTER_ALIGNMENT); // Această linie nu mai este necesară
+        // monitoringPanel.add(monitoringTitle); // Această linie nu mai este necesară
+
+        monitoringLabel = new JLabel("<html><br>Masini în intersecție = 0" +
+                "<br>Pietoni in intersectie = 0" +
+                "<br>Vehicule de urgență = 0" +
+                "<br>Frecvența schimbării semaforului = 0 schimbări/minut</html>");
+        monitoringLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        monitoringPanel.add(monitoringLabel);
+
+        gbc.gridy = 1;
+        gbc.weighty = 0.3;
+        leftPanel.add(monitoringPanel, gbc);
+
+
+        // 3. emergencyPanel
         emergencyPanel = new JPanel(new BorderLayout());
-        emergencyPanel.setBorder(BorderFactory.createTitledBorder("Vehicule de urgență"));
-        JLabel emergencyTitle = new JLabel("Vehicule prioritare (Ambulanță, Poliție, Pompieri)", SwingConstants.CENTER);
+        emergencyPanel.setBorder(BorderFactory.createTitledBorder("Emergency Vehicles"));
         emergencyListModel = new DefaultListModel<>();
         emergencyList = new JList<>(emergencyListModel);
-        emergencyPanel.add(emergencyTitle, BorderLayout.NORTH);
         emergencyPanel.add(new JScrollPane(emergencyList), BorderLayout.CENTER);
-        rightPanel.add(emergencyPanel);
 
-        // Panel Vehicule normale
+        gbc.gridy = 2;
+        gbc.weighty = 0.5;
+        gbc.fill = GridBagConstraints.BOTH;
+        leftPanel.add(emergencyPanel, gbc);
+
+
+        // --- Inițializare și Configurare rightPanel ---
+        rightPanel = new JPanel();
+        rightPanel.setLayout(new GridLayout(2, 1, 10, 10));
+
+        // 1. vehiclePanel
         vehiclePanel = new JPanel(new BorderLayout());
-        vehiclePanel.setBorder(BorderFactory.createTitledBorder("Vehicule în intersecție"));
-        JLabel vehicleTitle = new JLabel("Lista vehiculelor care așteaptă", SwingConstants.CENTER);
+        vehiclePanel.setBorder(BorderFactory.createTitledBorder("Normal Vehicles"));
         vehicleListModel = new DefaultListModel<>();
         vehicleList = new JList<>(vehicleListModel);
-        vehiclePanel.add(vehicleTitle, BorderLayout.NORTH);
         vehiclePanel.add(new JScrollPane(vehicleList), BorderLayout.CENTER);
         rightPanel.add(vehiclePanel);
 
-        frame.add(rightPanel);
+        // 2. pedestrianPanel
+        pedestrianPanel = new JPanel(new BorderLayout());
+        pedestrianPanel.setBorder(BorderFactory.createTitledBorder("Pedestrians"));
+        pedestrianListModel = new DefaultListModel<>();
+        pedestrianList = new JList<>(pedestrianListModel);
+        pedestrianPanel.add(new JScrollPane(pedestrianList), BorderLayout.CENTER);
+        rightPanel.add(pedestrianPanel);
 
-        // Inițial: semaforul este pe roșu
-        setTrafficLightState("RED");
+
+        // --- Adaugă ambele panouri la frame ---
+        frame.add(leftPanel);
+        frame.add(rightPanel);
 
         frame.setVisible(true);
     }
 
-    // Actualizează starea semaforului
+    // --- (restul metodelor rămân la fel) ---
     public void setTrafficLightState(String state) {
-        redCircle.setOn(state.equals("RED"));
+        redCircle.setOn(state.equals("RED") || state.equals("RED_PEDESTRIAN_WAITING"));
         yellowCircle.setOn(state.equals("YELLOW"));
         greenCircle.setOn(state.equals("GREEN"));
 
-        stateLabel.setText("Current state: " + state);
+        if (state.equals("GREEN_PEDESTRIAN")) {
+            redCircle.setOn(true);
+            yellowCircle.setOn(false);
+            greenCircle.setOn(true);
+            stateLabel.setText("Current state: GREEN (Pedestrians)");
+        } else {
+            stateLabel.setText("Current state: " + state);
+        }
+
         lightPanel.repaint();
     }
 
-    public void addVehicle(String vehicle) {
-        if (!vehicleListModel.contains(vehicle)) {
-            vehicleListModel.addElement(vehicle);
-        }
-    }
-
-    public void addEmergency(String emergency) {
-        if (!emergencyListModel.contains(emergency)) {
-            emergencyListModel.addElement(emergency);
-        }
-    }
-
-    public void updateMonitoring(int vehiclesInIntersection, int emergencyVehicles, long averageWaitingTime, double lightChangeFrequency) {
-        String displayText = String.format("<html><br>Numărul de vehicule în intersecție = %d" +
-                        "<br>Numărul de vehicule de urgență = %d" +
-                        "<br>Frecvența schimbării semaforului = %.2f changes/minute</html>",
-                vehiclesInIntersection,
+    public void updateMonitoring(int vehicule, int pedestrian, int emergencyVehicles, long averageWaitingTimeVehicles, double lightChangeFrequency) {
+        String displayText = String.format("<html><br>Masini în intersecție = %d" +
+                        "<br>Pietoni in intersectie = %d" +
+                        "<br>Vehicule de urgență = %d" +
+                        "<br>Frecvența schimbării semaforului = %.2f schimbări/minut</html>",
+                vehicule,
+                pedestrian,
                 emergencyVehicles,
                 lightChangeFrequency
         );
         monitoringLabel.setText(displayText);
     }
 
-    public void updateCarStatus(String type, String car, String status) {
-        DefaultListModel<String> targetList = type.equals("Emergency") ? emergencyListModel : vehicleListModel;
+    public void updateAgentStatus(String type, String agentName, String status) {
+        DefaultListModel<String> targetListModel;
+        JList<String> targetList;
+
+        if (type.equals("Emergency")) {
+            targetListModel = emergencyListModel;
+            targetList = emergencyList;
+        } else if (type.equals("Vehicule")) {
+            targetListModel = vehicleListModel;
+            targetList = vehicleList;
+        } else if (type.equals("Pedestrian")) {
+            targetListModel = pedestrianListModel;
+            targetList = pedestrianList;
+        } else {
+            System.err.println("Unknown agent type for GUI update: " + type);
+            return;
+        }
+
         boolean updated = false;
-        for (int i = 0; i < targetList.getSize(); i++) {
-            String element = targetList.get(i);
-            if (element.startsWith(car + ":")) {
-                targetList.set(i, car + ": " + status);
+        for (int i = 0; i < targetListModel.getSize(); i++) {
+            String element = targetListModel.get(i);
+            if (element.startsWith(agentName + ":")) {
+                targetListModel.set(i, agentName + ": " + status);
                 updated = true;
                 break;
             }
         }
         if (!updated) {
-            targetList.addElement(car + ": " + status);
+            targetListModel.addElement(agentName + ": " + status);
         }
+        targetList.ensureIndexIsVisible(targetListModel.getSize() - 1);
     }
 
-    // Clasă internă pentru desenarea cercurilor semaforului
     class LightCircle extends JPanel {
         private Color color;
         private boolean isOn = false;
 
         public LightCircle(Color color) {
             this.color = color;
-            this.setPreferredSize(new Dimension(20, 20));
+            this.setPreferredSize(new Dimension(50, 50));
+            this.setMaximumSize(new Dimension(50, 50));
+            this.setMinimumSize(new Dimension(50, 50));
         }
 
         public void setOn(boolean on) {
@@ -155,11 +200,14 @@ public class TrafficControlGUI {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            int size = 20;
+            int size = Math.min(getWidth(), getHeight()) - 4;
+            int x = (getWidth() - size) / 2;
+            int y = (getHeight() - size) / 2;
+
             g.setColor(isOn ? color : color.darker().darker());
-            g.fillOval(getWidth() / 2 - size / 2, getHeight() / 2 - size / 2, size, size);
+            g.fillOval(x, y, size, size);
             g.setColor(Color.BLACK);
-            g.drawOval(getWidth() / 2 - size / 2, getHeight() / 2 - size / 2, size, size);
+            g.drawOval(x, y, size, size);
         }
     }
 }
