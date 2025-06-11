@@ -1,13 +1,13 @@
 package org;
 
-import jade.core.AID;
 import jade.core.Agent;
+import jade.core.AID;
 import jade.core.behaviours.TickerBehaviour;
+import jade.lang.acl.ACLMessage;
 import jade.domain.DFService;
+import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import jade.domain.FIPAException;
-import jade.lang.acl.ACLMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,11 +16,10 @@ public class TrafficLightAgent extends Agent {
     private String state = "RED";
     private boolean emergencyActive = false;
     private TrafficControlGUI gui;
-    private long lastChangeTime = System.currentTimeMillis();
+    private long lastChangeSentToMonitorTime = System.currentTimeMillis(); // Track the time of the *last* message sent
     private int lightChangeCount = 0;
 
     protected void setup() {
-        // Primim GUI-ul ca parametru
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
             gui = (TrafficControlGUI) args[0];
@@ -32,16 +31,17 @@ public class TrafficLightAgent extends Agent {
         System.out.println("Traffic Light changed to: " + state);
         gui.setTrafficLightState(state);
 
-        addBehaviour(new TickerBehaviour(this, 10000) {
+        addBehaviour(new TickerBehaviour(this, 10000) { // Ticker runs every 10 seconds (10000 ms)
             protected void onTick() {
                 if (!emergencyActive) {
+                    long currentTimeForChange = System.currentTimeMillis(); // Capture current time before state change
+
                     switch (state) {
                         case "RED" -> state = "GREEN";
                         case "GREEN" -> state = "YELLOW";
                         case "YELLOW" -> state = "RED";
                     }
 
-                    // Trimitere mesaj către vehicule dacă semaforul devine verde
                     if (state.equals("GREEN")) {
                         ACLMessage greenMessage = new ACLMessage(ACLMessage.INFORM);
                         greenMessage.setContent("Green");
@@ -50,23 +50,21 @@ public class TrafficLightAgent extends Agent {
                         for (AID vehicle : vehicleAgents) {
                             greenMessage.addReceiver(vehicle);
                         }
-
                         send(greenMessage);
-//                        System.out.println("TrafficLightAgent sent Green signal to vehicles: " + vehicleAgents);
                     }
 
                     gui.setTrafficLightState(state);
                     System.out.println("Traffic Light changed to: " + state);
 
-                    long currentTime = System.currentTimeMillis();
+                    // Increment the count of light changes
                     lightChangeCount++;
-                    long timeSinceLastChange = currentTime - lastChangeTime;
-                    lastChangeTime = currentTime;
 
-                    // Trimite datele de monitorizare
+                    // Send update to MonitoringAgent
                     ACLMessage monitorUpdate = new ACLMessage(ACLMessage.INFORM);
                     monitorUpdate.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
-                    monitorUpdate.setContent("LightChange: " + lightChangeCount + ": " + timeSinceLastChange + " ms");
+                    // Send the total number of changes and the *current* time of this change.
+                    // The MonitoringAgent will use this to calculate the duration since the *previous* change it received.
+                    monitorUpdate.setContent("LightChange:" + lightChangeCount + ":" + currentTimeForChange);
                     send(monitorUpdate);
                 }
             }
@@ -91,5 +89,4 @@ public class TrafficLightAgent extends Agent {
 
         return vehicleAgents;
     }
-
 }

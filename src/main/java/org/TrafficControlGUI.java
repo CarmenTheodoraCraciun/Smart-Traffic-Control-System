@@ -49,9 +49,11 @@ public class TrafficControlGUI {
         monitoringPanel = new JPanel(new BorderLayout());
         monitoringPanel.setBorder(BorderFactory.createTitledBorder("Monitorizare trafic"));
         monitoringTitle = new JLabel("Date despre trafic și optimizare", SwingConstants.CENTER);
-        monitoringLabel = new JLabel("Aștept date despre trafic...", SwingConstants.CENTER);
+        monitoringLabel = new JLabel("<html><br>Numărul de vehicule în intersecție = 0<br>" +
+                "Numărul de vehicule de urgență = 0<br>" +
+                "Frecvența schimbării semaforului = 0</html>", SwingConstants.LEFT);
         monitoringPanel.add(monitoringTitle, BorderLayout.NORTH);
-        monitoringPanel.add(monitoringLabel, BorderLayout.CENTER);
+        monitoringPanel.add(monitoringLabel, BorderLayout.NORTH);
         leftPanel.add(monitoringPanel, BorderLayout.CENTER);
 
         frame.add(leftPanel);
@@ -109,8 +111,15 @@ public class TrafficControlGUI {
         }
     }
 
-    public void updateMonitoring(String data) {
-        monitoringLabel.setText("Statistici trafic: " + data);
+    public void updateMonitoring(int vehiclesInIntersection, int emergencyVehicles, long averageWaitingTime, double lightChangeFrequency) {
+        String displayText = String.format("<html><br>Numărul de vehicule în intersecție = %d" +
+                        "<br>Numărul de vehicule de urgență = %d" +
+                        "<br>Frecvența schimbării semaforului = %.2f changes/minute</html>",
+                vehiclesInIntersection,
+                emergencyVehicles,
+                lightChangeFrequency
+        );
+        monitoringLabel.setText(displayText);
     }
 
     public void updateCarStatus(String type, String car, String status) {
