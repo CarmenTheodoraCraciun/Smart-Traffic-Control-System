@@ -152,19 +152,23 @@ public class TrafficControlGUI {
     public void updateAgentStatus(String type, String agentName, String status) {
         DefaultListModel<String> targetListModel;
         JList<String> targetList;
-
-        if (type.equals("Emergency")) {
-            targetListModel = emergencyListModel;
-            targetList = emergencyList;
-        } else if (type.equals("Vehicule")) {
-            targetListModel = vehicleListModel;
-            targetList = vehicleList;
-        } else if (type.equals("Pedestrian")) {
-            targetListModel = pedestrianListModel;
-            targetList = pedestrianList;
-        } else {
-            System.err.println("Unknown agent type for GUI update: " + type);
-            return;
+        switch (type) {
+            case "Emergency" -> {
+                targetListModel = emergencyListModel;
+                targetList = emergencyList;
+            }
+            case "Vehicule" -> {
+                targetListModel = vehicleListModel;
+                targetList = vehicleList;
+            }
+            case "Pedestrian" -> {
+                targetListModel = pedestrianListModel;
+                targetList = pedestrianList;
+            }
+            default -> {
+                System.err.println("Unknown agent type for GUI update: " + type);
+                return;
+            }
         }
 
         boolean updated = false;

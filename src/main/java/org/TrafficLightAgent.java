@@ -2,7 +2,6 @@ package org;
 
 import jade.core.Agent;
 import jade.core.AID;
-import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.domain.DFService;
@@ -31,7 +30,7 @@ public class TrafficLightAgent extends Agent {
         System.out.println("Traffic Light changed to: " + state);
         gui.setTrafficLightState(state);
 
-        addBehaviour(new TickerBehaviour(this, 10000) { // Ticker runs every 10 seconds (10000 ms)
+        addBehaviour(new TickerBehaviour(this, 10000) {
             protected void onTick() {
                 if (!emergencyActive) {
                     long currentTimeForChange = System.currentTimeMillis(); // Capture current time before state change
@@ -50,6 +49,7 @@ public class TrafficLightAgent extends Agent {
                             pedestrianMessage.addReceiver(pedestrian);
                         }
                         send(pedestrianMessage);
+                        System.out.println("TrafficLightAgent - Sent Red signal to pedestrians");
                     }
 
                     if (state.equals("GREEN") && !emergencyActive) {
@@ -65,15 +65,10 @@ public class TrafficLightAgent extends Agent {
 
                     gui.setTrafficLightState(state);
                     System.out.println("Traffic Light changed to: " + state);
-
-                    // Increment the count of light changes
                     lightChangeCount++;
 
-                    // Send update to MonitoringAgent
                     ACLMessage monitorUpdate = new ACLMessage(ACLMessage.INFORM);
                     monitorUpdate.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
-                    // Send the total number of changes and the *current* time of this change.
-                    // The MonitoringAgent will use this to calculate the duration since the *previous* change it received.
                     monitorUpdate.setContent("LightChange:" + lightChangeCount + ":" + currentTimeForChange);
                     send(monitorUpdate);
                 }
@@ -102,6 +97,7 @@ public class TrafficLightAgent extends Agent {
 
     private List<AID> getPedestrianAgents() {
         List<AID> pedestrianAgents = new ArrayList<>();
+
         DFAgentDescription template = new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setType("pedestrian");
@@ -115,7 +111,7 @@ public class TrafficLightAgent extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
-
+        System.out.println("TrafficLightAgent - Found pedestrians: " + pedestrianAgents);
         return pedestrianAgents;
     }
 }

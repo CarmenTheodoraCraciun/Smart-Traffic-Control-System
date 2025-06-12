@@ -22,7 +22,7 @@ public class VehicleAgent extends Agent {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("vehicle"); // Toți vehiculele vor avea acest tip
+        sd.setType("vehicle");
         sd.setName("VehicleAgentService");
         dfd.addServices(sd);
 

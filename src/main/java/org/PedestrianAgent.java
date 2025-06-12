@@ -13,7 +13,7 @@ import javax.swing.*;
 
 public class PedestrianAgent extends Agent {
     private boolean crossed = false;
-    private DefaultListModel<String> vehicleListModel, emergencyListModel, pedestrianListModel;
+//    private DefaultListModel<String> vehicleListModel, emergencyListModel, pedestrianListModel;
 
     protected void setup() {
         System.out.println("Pedestrian Agent: " + getLocalName() + " started.");
@@ -26,7 +26,7 @@ public class PedestrianAgent extends Agent {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("pedestrian"); // Toți pietonii vor avea acest tip
+        sd.setType("pedestrian");
         sd.setName("PedestrianAgentService");
         dfd.addServices(sd);
 
@@ -41,24 +41,29 @@ public class PedestrianAgent extends Agent {
                 if (!crossed) {
                     ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
                     request.addReceiver(getDefaultTrafficLight());
-                    request.setContent("PedestrianAgent Request: cross intersection");
+                    request.setContent("Pedestian Request: cross intersection");
                     send(request);
+
+                    ACLMessage monitorUpdate = new ACLMessage(ACLMessage.REQUEST);
+                    monitorUpdate.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
+                    monitorUpdate.setContent(getLocalName() + ": Waiting");
+                    send(monitorUpdate);
                 }
             }
         });
 
-        addBehaviour(new CyclicBehaviour(this) {
+        addBehaviour(new jade.core.behaviours.CyclicBehaviour(this) {
             public void action() {
                 ACLMessage msg = receive();
                 if (msg != null) {
-                    String content = msg.getContent();
+                    if (msg.getContent().equals("Red")) {
+                        System.out.println("PedestrianAgent Answer: " + getLocalName() + " can cross.");
+                        crossed = true;
 
-                    if (content.equals("Red")) {  // Dacă semaforul e roșu
-                        ACLMessage emergencyCheck = new ACLMessage(ACLMessage.REQUEST);
-                        emergencyCheck.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
-                        emergencyCheck.setContent("PedestrianAgent");
-                        send(emergencyCheck);
-
+                        ACLMessage statusUpdate = new ACLMessage(ACLMessage.INFORM);
+                        statusUpdate.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
+                        statusUpdate.setContent(getLocalName() + ": Crossed");
+                        send(statusUpdate);
                     } else {
                         System.out.println("PedestrianAgent Answer: " + getLocalName() + " must wait.");
                     }
@@ -67,37 +72,6 @@ public class PedestrianAgent extends Agent {
                 }
             }
         });
-
-        addBehaviour(new CyclicBehaviour(this) {
-            public void action() {
-                ACLMessage msg = receive();
-                if (msg != null && msg.getContent().equals("NoEmergency")) {
-                    System.out.println("PedestrianAgent Answer: " + getLocalName() + " can cross.");
-                    crossed = true;
-
-                    ACLMessage statusUpdate = new ACLMessage(ACLMessage.INFORM);
-                    statusUpdate.addReceiver(new jade.core.AID("MonitoringAgent", jade.core.AID.ISLOCALNAME));
-                    statusUpdate.setContent(getLocalName() + ": Crossed");
-                    send(statusUpdate);
-                }
-            }
-        });
-    }
-
-    public void updatePersonStatus(String type, String car, String status) {
-        DefaultListModel<String> targetList = type.equals("Emergency") ? emergencyListModel : vehicleListModel;
-        boolean updated = false;
-        for (int i = 0; i < targetList.getSize(); i++) {
-            String element = targetList.get(i);
-            if (element.startsWith(car + ":")) {
-                targetList.set(i, car + ": " + status);
-                updated = true;
-                break;
-            }
-        }
-        if (!updated) {
-            targetList.addElement(car + ": " + status);
-        }
     }
 
     private jade.core.AID getDefaultTrafficLight() {

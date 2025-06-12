@@ -61,7 +61,7 @@ public class MonitoringAgent extends Agent {
                             String name = parts[0];
                             String status = parts[1];
 
-                            boolean isPedestrian = name.startsWith("pedestrian");
+                            boolean isPedestrian = isPedestrian(name);
                             HashMap<String, String> targetStatus = isPedestrian ? pedestrianStatus : vehicleStatus;
 
                             if (!entryTimes.containsKey(name)) {
@@ -93,6 +93,7 @@ public class MonitoringAgent extends Agent {
                         response.addReceiver(msg.getSender());
                         response.setContent(emergencyPresent ? "EmergencyActive" : "NoEmergency");
                         send(response);
+                        System.out.println("MonitoringAgent - Emergency check result: " + response.getContent());
                     }
 
                     long emergencyVehiclesInIntersection = vehicleStatus.entrySet().stream()
@@ -109,6 +110,26 @@ public class MonitoringAgent extends Agent {
             }
         });
     }
+
+    private boolean isPedestrian(String agentName) {
+        try {
+            DFAgentDescription template = new DFAgentDescription();
+            ServiceDescription sd = new ServiceDescription();
+            sd.setType("pedestrian"); // Tipul pietonilor înregistrat în DFService
+            template.addServices(sd);
+
+            DFAgentDescription[] result = DFService.search(this, template);
+            for (DFAgentDescription dfd : result) {
+                if (dfd.getName().getLocalName().equals(agentName)) {
+                    return true;
+                }
+            }
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+        return false;
+    }
+
 
     private List<AID> getEmergencyAgents() {
         List<AID> emergencyAgents = new ArrayList<>();
