@@ -9,7 +9,6 @@ import jade.lang.acl.ACLMessage;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.CyclicBehaviour;
 
-
 public abstract class TrafficParticipantAgent extends Agent {
     protected boolean crossed = false;
     protected abstract ParticipantType getParticipantType(); // Vehicul sau Pieton

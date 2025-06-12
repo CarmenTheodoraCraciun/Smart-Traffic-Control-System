@@ -41,7 +41,7 @@ public class EmergencyAgent extends Agent {
         statusUpdate.setContent(getLocalName() + ": Crossed");
         send(statusUpdate);
 
-        System.out.println("EmergencyAgent Answer: " + getLocalName() + " has crossed and will remain in the list.");
+        System.out.println("EmergencyAgent Answer: " + getLocalName() + " has crossed.");
         doDelete();
     }
 

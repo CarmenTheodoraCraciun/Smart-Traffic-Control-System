@@ -93,7 +93,7 @@ public class MonitoringAgent extends Agent {
                         response.addReceiver(msg.getSender());
                         response.setContent(emergencyPresent ? "EmergencyActive" : "NoEmergency");
                         send(response);
-                        System.out.println("MonitoringAgent - Emergency check result: " + response.getContent());
+//                        System.out.println("MonitoringAgent - Emergency check result: " + response.getContent());
                     }
 
                     long emergencyVehiclesInIntersection = vehicleStatus.entrySet().stream()
@@ -104,6 +104,23 @@ public class MonitoringAgent extends Agent {
                     double frequency = (lastLightCycleDuration > 0) ? (60000.0 / lastLightCycleDuration) : 0.0;
 
                     gui.updateMonitoring(vehicleStatus.size(), pedestrianStatus.size(), (int) emergencyVehiclesInIntersection, averageWaitingTime, frequency);
+
+                    // Adăugarea aici a codului pentru trimiterea datelor către AnalysisReportingAgent
+                    ACLMessage reportMsg = new ACLMessage(ACLMessage.INFORM);
+                    reportMsg.addReceiver(new jade.core.AID("AnalysisReportingAgent", jade.core.AID.ISLOCALNAME));
+                    reportMsg.setContent(
+                            "REPORT_DATA:" +
+                                    "vehiculeInIntersection=" + vehicleStatus.size() + ";" +
+                                    "pedestrianInIntersection=" + pedestrianStatus.size() + ";" +
+                                    "emergencyVehicles=" + emergencyVehiclesInIntersection + ";" +
+                                    "averageWaitingTime=" + averageWaitingTime + ";" +
+                                    "lightChangeFrequency=" + frequency + ";" +
+                                    "totalLightChanges=" + totalLightChanges + ";" +
+                                    "totalWaitingTimeOverall=" + totalWaitingTime + ";" +
+                                    "entitiesProcessedOverall=" + entitiesProcessed
+                    );
+                    send(reportMsg);
+
                 } else {
                     block();
                 }
@@ -115,7 +132,7 @@ public class MonitoringAgent extends Agent {
         try {
             DFAgentDescription template = new DFAgentDescription();
             ServiceDescription sd = new ServiceDescription();
-            sd.setType("pedestrian"); // Tipul pietonilor înregistrat în DFService
+            sd.setType("pedestrian"); // Tipul pietonilor înregistrat în DFService 
             template.addServices(sd);
 
             DFAgentDescription[] result = DFService.search(this, template);

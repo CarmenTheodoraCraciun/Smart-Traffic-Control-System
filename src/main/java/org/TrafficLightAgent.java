@@ -111,7 +111,7 @@ public class TrafficLightAgent extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
-        System.out.println("TrafficLightAgent - Found pedestrians: " + pedestrianAgents);
+//        System.out.println("TrafficLightAgent - Found pedestrians: " + pedestrianAgents);
         return pedestrianAgents;
     }
 }

@@ -6,7 +6,7 @@ import java.awt.*;
 public class TrafficControlGUI {
     private JFrame frame;
     private JPanel leftPanel, rightPanel, lightPanel, monitoringPanel, vehiclePanel, emergencyPanel, pedestrianPanel;
-    private JLabel lightTitle, stateLabel, monitoringTitle, monitoringLabel; // monitoringTitle poate fi chiar eliminat din declarare
+    private JLabel lightTitle, stateLabel, monitoringLabel;
     private DefaultListModel<String> vehicleListModel, emergencyListModel, pedestrianListModel;
     private JList<String> vehicleList, emergencyList, pedestrianList;
 
@@ -18,19 +18,19 @@ public class TrafficControlGUI {
         frame.setSize(750, 500);
         frame.setLayout(new GridLayout(1, 2, 10, 10));
 
-        // --- Inițializare și Configurare leftPanel ---
+        // Left panel setup
         leftPanel = new JPanel();
         leftPanel.setLayout(new GridBagLayout());
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // 1. lightPanel (Semafor)
+        // Traffic light panel
         lightPanel = new JPanel();
         lightPanel.setLayout(new BoxLayout(lightPanel, BoxLayout.Y_AXIS));
-        lightPanel.setBorder(BorderFactory.createTitledBorder("Semafor"));
+        lightPanel.setBorder(BorderFactory.createTitledBorder("Traffic Light"));
 
-        lightTitle = new JLabel("Traffic Light: Culoarea activă este evidențiată", SwingConstants.CENTER);
+        lightTitle = new JLabel("Traffic Light: The active color is highlighted", SwingConstants.CENTER);
         lightTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         lightPanel.add(lightTitle);
 
@@ -47,7 +47,6 @@ public class TrafficControlGUI {
         stateLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         lightPanel.add(stateLabel);
 
-
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.weightx = 1.0;
@@ -55,20 +54,15 @@ public class TrafficControlGUI {
         gbc.fill = GridBagConstraints.BOTH;
         leftPanel.add(lightPanel, gbc);
 
-
-        // 2. monitoringPanel - MODIFICARE AICI: Eliminăm JLabel-ul "Monitoring Data"
+        // Monitoring panel
         monitoringPanel = new JPanel();
         monitoringPanel.setLayout(new BoxLayout(monitoringPanel, BoxLayout.Y_AXIS));
-        monitoringPanel.setBorder(BorderFactory.createTitledBorder("Monitoring Data")); // Acesta este titlul dorit
+        monitoringPanel.setBorder(BorderFactory.createTitledBorder("Monitoring Data"));
 
-        // monitoringTitle = new JLabel("Monitoring Data"); // Această linie nu mai este necesară
-        // monitoringTitle.setAlignmentX(Component.CENTER_ALIGNMENT); // Această linie nu mai este necesară
-        // monitoringPanel.add(monitoringTitle); // Această linie nu mai este necesară
-
-        monitoringLabel = new JLabel("<html><br>Masini în intersecție = 0" +
-                "<br>Pietoni in intersectie = 0" +
-                "<br>Vehicule de urgență = 0" +
-                "<br>Frecvența schimbării semaforului = 0 schimbări/minut</html>");
+        monitoringLabel = new JLabel("<html><br>Vehicles in intersection = 0" +
+                "<br>Pedestrians in intersection = 0" +
+                "<br>Emergency vehicles = 0" +
+                "<br>Traffic light change frequency = 0 changes/minute</html>");
         monitoringLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         monitoringPanel.add(monitoringLabel);
 
@@ -76,8 +70,7 @@ public class TrafficControlGUI {
         gbc.weighty = 0.3;
         leftPanel.add(monitoringPanel, gbc);
 
-
-        // 3. emergencyPanel
+        // Emergency vehicle panel
         emergencyPanel = new JPanel(new BorderLayout());
         emergencyPanel.setBorder(BorderFactory.createTitledBorder("Emergency Vehicles"));
         emergencyListModel = new DefaultListModel<>();
@@ -89,12 +82,11 @@ public class TrafficControlGUI {
         gbc.fill = GridBagConstraints.BOTH;
         leftPanel.add(emergencyPanel, gbc);
 
-
-        // --- Inițializare și Configurare rightPanel ---
+        // Right panel setup
         rightPanel = new JPanel();
         rightPanel.setLayout(new GridLayout(2, 1, 10, 10));
 
-        // 1. vehiclePanel
+        // Normal vehicle panel
         vehiclePanel = new JPanel(new BorderLayout());
         vehiclePanel.setBorder(BorderFactory.createTitledBorder("Normal Vehicles"));
         vehicleListModel = new DefaultListModel<>();
@@ -102,7 +94,7 @@ public class TrafficControlGUI {
         vehiclePanel.add(new JScrollPane(vehicleList), BorderLayout.CENTER);
         rightPanel.add(vehiclePanel);
 
-        // 2. pedestrianPanel
+        // Pedestrian panel
         pedestrianPanel = new JPanel(new BorderLayout());
         pedestrianPanel.setBorder(BorderFactory.createTitledBorder("Pedestrians"));
         pedestrianListModel = new DefaultListModel<>();
@@ -110,15 +102,12 @@ public class TrafficControlGUI {
         pedestrianPanel.add(new JScrollPane(pedestrianList), BorderLayout.CENTER);
         rightPanel.add(pedestrianPanel);
 
-
-        // --- Adaugă ambele panouri la frame ---
+        // Add panels to frame
         frame.add(leftPanel);
         frame.add(rightPanel);
-
         frame.setVisible(true);
     }
 
-    // --- (restul metodelor rămân la fel) ---
     public void setTrafficLightState(String state) {
         redCircle.setOn(state.equals("RED") || state.equals("RED_PEDESTRIAN_WAITING"));
         yellowCircle.setOn(state.equals("YELLOW"));
@@ -136,15 +125,12 @@ public class TrafficControlGUI {
         lightPanel.repaint();
     }
 
-    public void updateMonitoring(int vehicule, int pedestrian, int emergencyVehicles, long averageWaitingTimeVehicles, double lightChangeFrequency) {
-        String displayText = String.format("<html><br>Masini în intersecție = %d" +
-                        "<br>Pietoni in intersectie = %d" +
-                        "<br>Vehicule de urgență = %d" +
-                        "<br>Frecvența schimbării semaforului = %.2f schimbări/minut</html>",
-                vehicule,
-                pedestrian,
-                emergencyVehicles,
-                lightChangeFrequency
+    public void updateMonitoring(int vehicles, int pedestrians, int emergencyVehicles, long averageWaitingTime, double lightChangeFrequency) {
+        String displayText = String.format("<html><br>Vehicles in intersection = %d" +
+                        "<br>Pedestrians in intersection = %d" +
+                        "<br>Emergency vehicles = %d" +
+                        "<br>Traffic light change frequency = %.2f changes/minute</html>",
+                vehicles, pedestrians, emergencyVehicles, lightChangeFrequency
         );
         monitoringLabel.setText(displayText);
     }
@@ -180,21 +166,21 @@ public class TrafficControlGUI {
                 break;
             }
         }
+
         if (!updated) {
             targetListModel.addElement(agentName + ": " + status);
         }
+
         targetList.ensureIndexIsVisible(targetListModel.getSize() - 1);
     }
 
     class LightCircle extends JPanel {
-        private Color color;
+        private final Color color;
         private boolean isOn = false;
 
         public LightCircle(Color color) {
             this.color = color;
             this.setPreferredSize(new Dimension(50, 50));
-            this.setMaximumSize(new Dimension(50, 50));
-            this.setMinimumSize(new Dimension(50, 50));
         }
 
         public void setOn(boolean on) {
